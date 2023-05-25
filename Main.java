@@ -1,26 +1,22 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 public class Main {
 
+    public static void main(String[] args) {
+        int[][] grafo = grafoCompletoPonderado(14); // Substitua o número de vértices desejado aqui
+        int[] melhorCaminho = encontrarMenorCaminho(grafo);
+        System.out.println("Melhor caminho: " + imprimirCaminho(melhorCaminho));
+    }
+
     static Random aleatorio = new Random(42);
 
-    /**
-     * Retorna uma matriz quadrada de "vertices" x "vertices" com números inteiros,
-     * representando um grafo completo. A diagonal principal está preenchida com
-     * valor -1, indicando que não há aresta.
-     * @param vertices A quantidade de vértices do grafo.
-     * @return Matriz quadrada com custos de movimentação entre os vértices.
-     */
-    public static int[][] grafoCompletoPonderado(int vertices){
+    public static int[][] grafoCompletoPonderado(int vertices) {
         int[][] matriz = new int[vertices][vertices];
         int valor;
         for (int i = 0; i < matriz.length; i++) {
-            matriz[i][i]=-1;
-            for (int j = i+1; j < matriz.length; j++) {
-                valor = aleatorio.nextInt(25)+1;
+            matriz[i][i] = -1;
+            for (int j = i + 1; j < matriz.length; j++) {
+                valor = aleatorio.nextInt(25) + 1;
                 matriz[i][j] = valor;
                 matriz[j][i] = valor;
             }
@@ -28,68 +24,56 @@ public class Main {
         return matriz;
     }
 
-    public static int calcularCustoViagem(int[][] matriz, int[] permutacao) {
-        int custo = 0;
-        for (int i = 0; i < permutacao.length - 1; i++) {
-            int origem = permutacao[i];
-            int destino = permutacao[i + 1];
-            custo += matriz[origem][destino];
-        }
-        return custo;
+    public static int[] encontrarMenorCaminho(int[][] grafo) {
+        int vertices = grafo.length;
+        int[] caminhoAtual = new int[vertices + 1];
+        int[] melhorCaminho = new int[vertices + 1];
+        boolean[] visitado = new boolean[vertices];
+        int custoAtual, menorCusto = Integer.MAX_VALUE;
+        int cidadeAtual, proximaCidade;
+
+        caminhoAtual[0] = 0; // Começa na cidade 0
+        visitado[0] = true;
+
+        permutacao(grafo, caminhoAtual, 1, visitado, 0, vertices, 0, melhorCaminho, menorCusto);
+
+        return melhorCaminho;
     }
 
-    public static int[] encontrarMenorCusto(int[][] matriz, List<int[]> permutacoes) {
-        int menorCusto = Integer.MAX_VALUE;
-        int[] melhorPermutacao = null;
-
-        for (int[] permutacao : permutacoes) {
-            int custo = calcularCustoViagem(matriz, permutacao);
-            if (custo < menorCusto) {
-                menorCusto = custo;
-                melhorPermutacao = permutacao;
+    public static void permutacao(int[][] grafo, int[] caminhoAtual, int posicaoAtual, boolean[] visitado,
+                                  int custoAtual, int vertices, int nivel, int[] melhorCaminho, int menorCusto) {
+        if (posicaoAtual == vertices) {
+            if (grafo[caminhoAtual[posicaoAtual - 1]][caminhoAtual[0]] != -1) {
+                custoAtual += grafo[caminhoAtual[posicaoAtual - 1]][caminhoAtual[0]];
+                if (custoAtual < menorCusto) {
+                    menorCusto = custoAtual;
+                    System.arraycopy(caminhoAtual, 0, melhorCaminho, 0, vertices + 1);
+                }
             }
+            return;
         }
 
-        return melhorPermutacao;
-    }
+        for (int i = 1; i < vertices; i++) {
+            if (!visitado[i] && grafo[caminhoAtual[posicaoAtual - 1]][i] != -1) {
+                visitado[i] = true;
+                caminhoAtual[posicaoAtual] = i;
+                custoAtual += grafo[caminhoAtual[posicaoAtual - 1]][i];
 
-    public static List<int[]> gerarPermutacoes(int vertices) {
-        List<int[]> permutacoes = new ArrayList<>();
-        int[] permutacaoInicial = new int[vertices];
-        for (int i = 0; i < vertices; i++) {
-            permutacaoInicial[i] = i;
-        }
-        permutar(permutacoes, permutacaoInicial, 0);
-        return permutacoes;
-    }
+                permutacao(grafo, caminhoAtual, posicaoAtual + 1, visitado, custoAtual, vertices, nivel + 1,
+                        melhorCaminho, menorCusto);
 
-    private static void permutar(List<int[]> permutacoes, int[] permutacao, int indice) {
-        if (indice == permutacao.length - 1) {
-            permutacoes.add(permutacao.clone());
-        } else {
-            for (int i = indice; i < permutacao.length; i++) {
-                trocar(permutacao, indice, i);
-                permutar(permutacoes, permutacao, indice + 1);
-                trocar(permutacao, indice, i); // Reverter a troca para restaurar a ordem original
+                custoAtual -= grafo[caminhoAtual[posicaoAtual - 1]][i];
+                visitado[i] = false;
             }
         }
     }
 
-    private static void trocar(int[] array, int i, int j) {
-        int temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-
-
-    public static void main(String[] args) {
-        int vertices = 11;
-        int[][] matriz = grafoCompletoPonderado(vertices);
-
-        List<int[]> permutacoes = gerarPermutacoes(vertices);
-        int[] melhorPermutacao = encontrarMenorCusto(matriz, permutacoes);
-
-        System.out.println("Melhor permutação: " + Arrays.toString(melhorPermutacao));
-        System.out.println("Custo total: " + calcularCustoViagem(matriz, melhorPermutacao));
+    public static String imprimirCaminho(int[] caminho) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < caminho.length - 1; i++) {
+            sb.append(caminho[i]).append(" -> ");
+        }
+        sb.append(caminho[caminho.length - 1]);
+        return sb.toString();
     }
 }
