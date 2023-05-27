@@ -136,52 +136,59 @@ public class CaixeiroViajante {
     }
 }
 
+class RelatorioCaixeiroViajante {
+    private int numGrafos;
+    private long tempoTotalForcaBruta;
+    private long tempoTotalGuloso;
+    private int solucoesOtimaGuloso;
 
-class TesteAutomatizado {
+    public RelatorioCaixeiroViajante() {
+        this.numGrafos = 0;
+        this.tempoTotalForcaBruta = 0;
+        this.tempoTotalGuloso = 0;
+        this.solucoesOtimaGuloso = 0;
+    }
 
-    public static void main(String[] args) {
-        int numCidades = 12;
-        long tempoTotalForcaBruta = 0;
-        int iteracoes = 70;
-        int nMinusUm = 4; // Valor inicial de N-1 para comparação
-
-        while (true) {
-            long tempoMedioForcaBruta = 0;
-
-            for (int i = 0; i < iteracoes; i++) {
-                CaixeiroViajante cv = new CaixeiroViajante(numCidades);
-
-                long inicio = System.currentTimeMillis();
-                cv.resolverForcaBruta();
-                long fim = System.currentTimeMillis();
-
-                tempoMedioForcaBruta += (fim - inicio);
-
-                if (fim - inicio > 240_000) {
-                    System.out.println("Iteração excedeu o tempo limite de 4 minutos.");
-                    return;
-                }
-            }
-
-            tempoMedioForcaBruta /= iteracoes;
-            tempoTotalForcaBruta += tempoMedioForcaBruta;
-
-            System.out.println("Número de vértices: " + numCidades);
-            System.out.println("Tempo médio de solução (Força Bruta): " + tempoMedioForcaBruta + "ms");
-
-            if (tempoMedioForcaBruta <= 3_500) {
-                nMinusUm = numCidades - 1;
-            }
-
-            if (nMinusUm != 4 && numCidades > nMinusUm) {
-                break;
-            }
-
-            numCidades++;
+    public void adicionarResultado(long tempoForcaBruta, long tempoGuloso, boolean encontrouSolucaoOtima) {
+        numGrafos++;
+        tempoTotalForcaBruta += tempoForcaBruta;
+        tempoTotalGuloso += tempoGuloso;
+        if (encontrouSolucaoOtima) {
+            solucoesOtimaGuloso++;
         }
+    }
 
-        System.out.println("Número N-1: " + nMinusUm);
-        System.out.println("Tempo total de execução (Força Bruta): " + tempoTotalForcaBruta + "ms");
+    public void gerarRelatorio() {
+        System.out.println("Relatório do Caixeiro Viajante:");
+        System.out.println("Número de grafos processados: " + numGrafos);
+        System.out.println("Tempo médio (Força Bruta): " + (double) tempoTotalForcaBruta / numGrafos + " ms");
+        System.out.println("Tempo médio (Guloso): " + (double) tempoTotalGuloso / numGrafos + " ms");
+        System.out.println("Soluções ótimas encontradas pelo algoritmo guloso: " + solucoesOtimaGuloso);
     }
 }
 
+class TesteAutomatizado {
+    public static void main(String[] args) {
+        int numGrafos = 1000;
+        int numCidades = 10;
+
+        RelatorioCaixeiroViajante relatorio = new RelatorioCaixeiroViajante();
+
+        for (int i = 0; i < numGrafos; i++) {
+            long inicioForcaBruta = System.currentTimeMillis();
+            CaixeiroViajante cv = new CaixeiroViajante(numCidades);
+            cv.resolverForcaBruta();
+            long tempoForcaBruta = System.currentTimeMillis() - inicioForcaBruta;
+
+            long inicioGuloso = System.currentTimeMillis();
+            cv.resolverGuloso();
+            long tempoGuloso = System.currentTimeMillis() - inicioGuloso;
+
+            boolean encontrouSolucaoOtima = Arrays.equals(cv.getMelhorCaminho(), cv.getMelhorCaminho());
+
+            relatorio.adicionarResultado(tempoForcaBruta, tempoGuloso, encontrouSolucaoOtima);
+        }
+
+        relatorio.gerarRelatorio();
+    }
+}
